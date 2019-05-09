@@ -21,7 +21,6 @@ struct dl_ch
     void *priv;
 };
 
-struct dl_ch *dl_channel_get(void);
 struct dl_ch *dl_channel_init(void);
 
 #endif

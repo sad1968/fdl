@@ -37,17 +37,18 @@ struct dl_pkt {
 
 struct dl_cmd {
 	u32_t type;
-	int (*handle)(struct dl_pkt *pkt, void *arg);
+	int (*handle)(unsigned char *payload, unsigned int len);
 };
 
 struct dl_ch;
 
+struct uwp_pkt;
 struct dl_pkt *dl_pkt_alloc(void);
-void dl_packet_free (struct dl_pkt *pkt);
-void dl_packet_send (struct dl_pkt *pkt);
+void dl_pkt_free (struct dl_pkt *pkt);
+void dl_pkt_send (struct dl_pkt *pkt);
 void dl_send_ack (u32_t cmd);
-int dl_pkt_handler(u8_t *buf, u32_t len);
-void dl_packet_init(struct dl_ch *ch);
+int dl_pkt_handler(struct uwp_pkt *pkt);
+void dl_pkt_init(struct dl_ch *ch);
 
 #endif  // PACKET_H
 

@@ -9,26 +9,33 @@ LOG_MODULE_REGISTER(FDL);
 
 #include <zephyr.h>
 
-#include "dl_channel.h"
-#include "dl_command.h"
-#include "dl_packet.h"
+#include "uwp_cmd.h"
+#include "uwp_intf.h"
 
+unsigned char debug_mode(void)
+{
+#ifdef CONFIG_FDL_DEBUG
+	return 1;
+#else
+	return 0;
+#endif
+}
+
+#define INTF_NAME	"zephyr_uart"
+#define DEV_NAME	"UART_0"
 
 void main(void)
 {
 	int ret;
-	struct dl_ch *ch;
-	LOG_INF("UNISOC fdl.");
+	LOG_INF("UNISOC FDL.");
 
-	ch = dl_channel_init();
-	if (ch == NULL) {
+	ret = uwp_intf_init(INTF_NAME, DEV_NAME);
+	if (ret) {
 		LOG_ERR("Init channel failed.");
 		return;
 	}
-
-	dl_packet_init(ch);
 	
-	ret = dl_cmd_init();
+	ret = uwp_cmd_init();
 	if (ret) {
 		LOG_ERR("Init command failed.");
 		return;

@@ -10,11 +10,11 @@ LOG_MODULE_DECLARE(FDL);
 #include <zephyr.h>
 #include <string.h>
 
+#include "dloader.h"
 #include "dl_packet.h"
-#include "dl_stdio.h"
-#include "dl_crc.h"
 #include "dl_channel.h"
-#include "dl_command.h"
+#include "uwp_pkt.h"
+#include "uwp_cmd.h"
 
 struct dl_ch *fdl_ch;
 struct dl_ch *gFdlPrintChannel;
@@ -23,7 +23,7 @@ static struct dl_pkt  packet[PACKET_MAX_NUM];
 
 static struct dl_pkt *packet_free_list;
 
-void dl_packet_init(struct dl_ch *ch)
+void dl_pkt_init(struct dl_ch *ch)
 {
 	uint32_t i = 0;
 
@@ -55,7 +55,7 @@ struct dl_pkt *dl_pkt_alloc (void)
 	return tmp_ptr;
 }
 
-void dl_packet_free(struct dl_pkt *ptr)
+void dl_pkt_free(struct dl_pkt *ptr)
 {
 	ptr->next = packet_free_list;
 	packet_free_list = ptr;
@@ -66,7 +66,7 @@ void dl_pkt_write (const void *buf, int len)
 	fdl_ch->write (fdl_ch, buf, len);
 }
 
-void dl_packet_send(struct dl_pkt *pkt)
+void dl_pkt_send(struct dl_pkt *pkt)
 {
 	u32_t send_len;
 	u8_t c = 0x7E;
@@ -89,7 +89,7 @@ void dl_packet_send(struct dl_pkt *pkt)
 	dl_pkt_write((u8_t *)&(pkt->body), send_len);
 	dl_pkt_write(&c, 1);
 
-	dl_packet_free(pkt);
+	dl_pkt_free(pkt);
 }
 
 void dl_send_ack(u32_t cmd)
@@ -99,54 +99,46 @@ void dl_send_ack(u32_t cmd)
 	pkt = dl_pkt_alloc();
 	if (pkt == NULL) {
 		LOG_INF("Alloc packet failed!");
-		dl_cmd_reply(OPERATE_SYSTEM_ERROR);
+		uwp_cmd_reply(9);
 		return;
 	}
 
 	pkt->body.type = cmd;
 	pkt->body.size = 0;
 
-	dl_packet_send(pkt);
+	dl_pkt_send(pkt);
 }
 
+#if 0
 struct dl_cmd dl_cmds[] = {
-	{BSL_CMD_CONNECT, dl_cmd_connect},
-	{BSL_CMD_START_DATA, dl_cmd_start},
-	{BSL_CMD_MIDST_DATA, dl_cmd_midst},
-	{BSL_CMD_END_DATA, dl_cmd_end},
+	{BSL_CMD_CONNECT, uwp_cmd_connect_resp},
+	{BSL_CMD_START_DATA, uwp_cmd_start_resp},
+	{BSL_CMD_MIDST_DATA, uwp_cmd_midst_resp},
+	{BSL_CMD_END_DATA, uwp_cmd_end_resp},
 	{0, NULL}
 };
 
-int dl_pkt_handler(u8_t *buf, u32_t len)
+int dl_pkt_handler(struct uwp_pkt *pkt)
 {
 	u32_t i;
 	u32_t cmds_cnt = sizeof(dl_cmds) / sizeof(struct dl_cmd);
+	struct uwp_pkt_hdr *hdr;
+
 	struct dl_cmd *cmd;
-	struct dl_pkt *pkt;
 
-	pkt = dl_pkt_alloc();
-	if (pkt == NULL) {
-		LOG_ERR("Alloc packet failed!\n");
-		dl_send_ack(BSL_REP_OPERATION_FAILED);
-		return -1;
-	}
+	hdr = uwp_pkt_hdr(pkt);
+	hdr->type = le16(hdr->type);
+	hdr->size = le16(hdr->size);
 
-	memcpy(&(pkt->body), buf, len);
-	pkt->data_size = len;
-
-	pkt->body.type = EndianConv_16(pkt->body.type);
-	pkt->body.size = EndianConv_16(pkt->body.size);
-
-	LOG_INF("pkt type: %d.", pkt->body.type);
+	LOG_INF("pkt type: %d.", hdr->type);
 	for (i = 0, cmd = dl_cmds; i < cmds_cnt; i++, cmd++) {
-		if ((pkt->body.type == cmd->type) && (cmd->handle != NULL)) {
-			cmd->handle(pkt, NULL);
-			dl_packet_free(pkt);
+		if ((hdr->type == cmd->type) && (cmd->handle != NULL)) {
+			cmd->handle(uwp_pkt_payload(pkt), hdr->size);
 			return 0;
 		}
 	}
 
-	dl_packet_free(pkt);
 	/* cannot found the cmd in cmdlist */
-	return dl_cmd_reply(OPERATE_INVALID_ADDR);
+	return uwp_cmd_reply(0);
 }
+#endif

@@ -147,10 +147,10 @@ typedef struct _REPARTITION_TABLE_INFO
 } REPARTITION_TABLE_INFO;
 
 int dl_cmd_reply(uint32_t err);
-int dl_cmd_connect(struct dl_pkt * packet, void *arg);
-int dl_cmd_start(struct dl_pkt * packet, void *arg);
-int dl_cmd_midst(struct dl_pkt * packet, void *arg);
-int dl_cmd_end(struct dl_pkt * packet, void *arg);
+int dl_cmd_connect(unsigned char *payload, unsigned int len);
+int dl_cmd_start(unsigned char *payload, unsigned int len);
+int dl_cmd_midst(unsigned char *payload, unsigned int len);
+int dl_cmd_end(unsigned char *payload, unsigned int len);
 int dl_cmd_read_start(struct dl_pkt * packet, void *arg);
 int dl_cmd_read_midst(struct dl_pkt * packet, void *arg);
 int dl_cmd_read_end(struct dl_pkt * packet, void *arg);
