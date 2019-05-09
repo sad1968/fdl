@@ -4,8 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "logging/log.h"
+LOG_MODULE_DECLARE(FDL);
+
 #include <zephyr.h>
-#include <logging/sys_log.h>
 
 #include "dl_crc.h"
 

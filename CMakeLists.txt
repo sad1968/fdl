@@ -5,7 +5,6 @@ project(NONE)
 zephyr_include_directories(src/dloader)
 
 target_sources(app PRIVATE src/main.c)
-target_sources(app PRIVATE src/dloader/dl_stdio.c)
 target_sources(app PRIVATE src/dloader/dl_channel.c)
 target_sources(app PRIVATE src/dloader/dl_crc.c)
 target_sources(app PRIVATE src/dloader/dl_packet.c)

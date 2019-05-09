@@ -4,27 +4,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "logging/log.h"
+LOG_MODULE_REGISTER(FDL);
+
 #include <zephyr.h>
-#include <logging/sys_log.h>
 
 #include "dl_channel.h"
 #include "dl_command.h"
 #include "dl_packet.h"
 
-#ifdef SYS_LOG_DOMAIN
-#undef SYS_LOG_DOMAIN
-#endif
-#define SYS_LOG_DOMAIN	"UNISOC"
 
 void main(void)
 {
 	int ret;
 	struct dl_ch *ch;
-	printk("UNISOC fdl.\n");
+	LOG_INF("UNISOC fdl.");
 
 	ch = dl_channel_init();
 	if (ch == NULL) {
-		printk("Init channel failed.\n");
+		LOG_ERR("Init channel failed.");
 		return;
 	}
 
@@ -32,9 +30,9 @@ void main(void)
 	
 	ret = dl_cmd_init();
 	if (ret) {
-		printk("Init command failed.\n");
+		LOG_ERR("Init command failed.");
 		return;
 	}
 
-	printk("start download...\n");
+	LOG_INF("start download...");
 }

@@ -4,8 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "logging/log.h"
+LOG_MODULE_DECLARE(FDL);
+
 #include <zephyr.h>
-#include <logging/sys_log.h>
 #include <string.h>
 #include <uart.h>
 
@@ -18,26 +20,12 @@
 #define BOOT_FLAG_UART1                 (0x6A)
 #define BOOT_FLAG_UART0                 (0x7A)
 
-#define UART_0	"UART_0"
+#define UART_NAME	"UART_0"
 struct device *uart_dev;
-
-/******************************************************************************/
-//  Description:    find a useable channel
-//  Global resource dependence:
-//  Author:         junqiang.wang
-//  Note:
-/******************************************************************************/
 
 static int uart_write(struct dl_ch  *channel, const unsigned char *buf, unsigned int len)
 {
 	struct device *priv = (struct device*)channel->priv;
-#if 0
-	int i;
-	for (i=0; i<len; i++) {
-		printk(" %x",buf[i]);
-	}
-	printk("\n");
-#endif
 	return uart_fifo_fill(priv,buf,len);
 }
 
@@ -45,7 +33,7 @@ static int uart_put_char(struct dl_ch  *channel, const unsigned char ch)
 {
 	struct device *priv = (struct device*)channel->priv;
  
-	printk("uart put: %c(0x%02x)\n", ch, ch);
+	LOG_INF("uart put: %c(0x%02x)", ch, ch);
 	uart_poll_out(priv,ch);
 
 	return 0;
@@ -69,7 +57,7 @@ void uart_rx_handle(struct dl_ch *ch)
 	len = uart_fifo_read(dev, &buf[offset], MAX_PKT_SIZE);
 	offset += len;
 	if (offset > MAX_PKT_SIZE) {
-		printk("Data packet overflow!\n");
+		LOG_ERR("Data packet overflow!\n");
 		dl_send_ack(BSL_REP_OPERATION_FAILED);
 		return;
 	}
@@ -83,13 +71,9 @@ void uart_rx_handle(struct dl_ch *ch)
 
 	if (!pkt_complete) return;
 
-	printk("uart read 0x%x bytes: \n", offset);
+	LOG_INF("uart read 0x%x bytes: ", offset);
 	if (offset < 32) {
-		for (i = 0; i < offset; i++) {
-			printk("%02x ", buf[i]);
-			if ((i > 0) && (i % 16 == 0)) printk("\n");
-		}
-		printk("\n");
+		LOG_HEXDUMP_DBG(buf, offset, "rx data");
 	}
 
 	/* remove 0x7E at the head and tail. */
@@ -118,9 +102,9 @@ struct dl_ch *dl_channel_init(void)
 {
 	struct dl_ch *uart_ch = &uart_channel;
 
-	uart_dev = device_get_binding(UART_0);
+	uart_dev = device_get_binding(UART_NAME);
 	if (uart_dev == NULL) {
-		SYS_LOG_WRN("uart_dev is NULL %x\n",uart_dev);
+		LOG_ERR("Open device %s failed", UART_NAME);
 		return NULL;
 	}
 

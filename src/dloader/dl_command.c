@@ -4,16 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "logging/log.h"
+LOG_MODULE_DECLARE(FDL);
+
 #include <zephyr.h>
 #include <string.h>
-#include <logging/sys_log.h>
 #include <flash.h>
 
 #include "dl_stdio.h"
 #include "dl_command.h"
 
 /*static root_stat_t root_stat;*/
-extern void print_addr(uint32_t addr);
 const char fdl_ver_str[] = {"SPRD3"};
 
 
@@ -108,7 +109,7 @@ int _parse_repartition_header(u8_t * data, repartition_table_info * info, u8_t *
 	pointer += 2;
 	info->table_size = *(unsigned short *)pointer;
 	pointer += 2;
-	printk("%s: version(%d),unit(%d), table_count(%d), table_tag(%d), table_offset(%d), table_size(%d)\n",
+	LOG_INF("%s: version(%d),unit(%d), table_count(%d), table_tag(%d), table_offset(%d), table_size(%d)\n",
 		__function__, info->version, info->unit, info->table_count, info->table_tag, info->table_offset,
 		info->table_size);
 	*list = pointer;
@@ -127,11 +128,11 @@ int dl_write_sf(uint32_t offset,uint32_t size,char *data)
 
 /* 	ret = spi_flash_erase(sf, offset,
 		sector * sf->sector_size); */
-	//printk("Writing to SPI flash...ret=%d, sec=%d, block=%x erasesize=%d \n",ret,sector,sf->sector_size,sf->erase_size);
+	//LOG_INF("Writing to SPI flash...ret=%d, sec=%d, block=%x erasesize=%d \n",ret,sector,sf->sector_size,sf->erase_size);
 	if (ret)
 		goto done;
 
-	////printk("Writing to SPI flash...ret=%d, sec=%d, block=%x \n",ret,sector,sf->sector_size);
+	////LOG_INF("Writing to SPI flash...ret=%d, sec=%d, block=%x \n",ret,sector,sf->sector_size);
 /* 	ret = spi_flash_write(sf, offset,
 		size, data); */
 	if (ret)
@@ -145,7 +146,7 @@ int dl_write_sf(uint32_t offset,uint32_t size,char *data)
 
 int dl_cmd_connect(struct dl_pkt *packet, void *arg)
 {
-	printk("dl_cmd_connect.\n");
+	LOG_INF("dl_cmd_connect.");
 	return dl_cmd_reply(OPERATE_SUCCESS);
 }
 
@@ -157,8 +158,8 @@ int dl_cmd_start(struct dl_pkt *packet, void *arg)
 	start_addr = EndianConv_32(start_addr);
 	partition_size = EndianConv_32(partition_size);
 
-	printk("start_addr %x\n",start_addr);
-	printk("partition_size %d\n",partition_size);
+	LOG_INF("start_addr %x",start_addr);
+	LOG_INF("partition_size %d",partition_size);
 
 	return dl_cmd_reply(OPERATE_SUCCESS);
 }
@@ -174,33 +175,35 @@ int dl_cmd_midst(struct dl_pkt *packet, void *arg)
 int dl_cmd_end(struct dl_pkt *packet, void *arg)
 {
 	int ret;
-	struct device *dev = device_get_binding(FLASH_LABEL);
+	struct device *dev = device_get_binding(DT_FLASH_AREA_0_DEV);
 	u8_t *data_addr = (u8_t *)CONFIG_SYS_LOAD_ADDR;
 
-	printk("dl_cmd_write_end %p\n", data_addr);
+	LOG_INF("dl_cmd_write_end %p", data_addr);
 	start_addr -= 0x2000000;
 	if (dev == NULL) {
-		printk("Can not open device: %s.\n", FLASH_LABEL);
+		LOG_ERR("Can not open device: %s.", DT_FLASH_AREA_0_DEV);
 		return dl_cmd_reply(OPERATE_SYSTEM_ERROR);
 	}
-	printk("Open device %s success.\n", FLASH_LABEL);
+	LOG_INF("Open device %s success.", DT_FLASH_AREA_0_DEV);
 	flash_write_protection_set(dev, false);
 
-	printk("Erase flash address: 0x%x size: 0x%x.\n", start_addr, partition_size);
+	partition_size = (partition_size + 0xFFF) & ~0xFFF;
+
+	LOG_INF("Erase flash address: 0x%x size: 0x%x.", start_addr, partition_size);
 	ret = flash_erase(dev, start_addr, partition_size);
 	if (ret) {
-		printk("Erase flash failed.\n");
+		LOG_ERR("Erase flash failed.");
 		return dl_cmd_reply(OPERATE_SYSTEM_ERROR);
 	}
-	printk("Erase success.\n");
+	LOG_INF("Erase success.");
 
-	printk("Write flash start...\n");
+	LOG_INF("Write flash start...");
 	ret = flash_write(dev, start_addr, data_addr, partition_size);
 	if (ret) {
-		printk("wirte flash failed.\n");
+		LOG_ERR("wirte flash failed.");
 		return dl_cmd_reply(OPERATE_SYSTEM_ERROR);
 	}
-	printk("Write success.\n");
+	LOG_INF("Write success.");
 	flash_write_protection_set(dev, true);
 
 	return dl_cmd_reply(OPERATE_SUCCESS);
@@ -212,7 +215,7 @@ int dl_cmd_init(void)
 
 	pkt = dl_pkt_alloc();
 	if (pkt == NULL) {
-		printk("No packet!\n");
+		LOG_ERR("No packet!");
 		return -1;
 	}
 

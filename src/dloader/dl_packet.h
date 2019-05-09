@@ -7,7 +7,7 @@
 #ifndef _DL_PACKET_H_
 #define _DL_PACKET_H_
 
-#define MAX_PKT_SIZE    0xA00 /* Just data field of a packet excluding header and checksum */
+#define MAX_PKT_SIZE    0x1000 /* Just data field of a packet excluding header and checksum */
 #define PACKET_HEADER_SIZE   4   // (type + size)
 
 #define PACKET_MAX_NUM    3

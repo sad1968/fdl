@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "logging/log.h"
+LOG_MODULE_DECLARE(FDL);
+
 #include <zephyr.h>
 #include <string.h>
-#include <logging/sys_log.h>
 
 #include "dl_packet.h"
 #include "dl_stdio.h"
@@ -21,22 +23,6 @@ static struct dl_pkt  packet[PACKET_MAX_NUM];
 
 static struct dl_pkt *packet_free_list;
 
-void print_addr(uint32_t addr)
-{
-	unsigned char temp;
-
-	temp = (unsigned char)(addr>>24);
-	gFdlPrintChannel->put_char(gFdlPrintChannel,temp);
-	temp = (unsigned char)(addr>>16);
-	gFdlPrintChannel->put_char(gFdlPrintChannel,temp);
-	temp = (unsigned char)(addr>>8);
-	gFdlPrintChannel->put_char(gFdlPrintChannel,temp);
-	temp = (unsigned char)addr;
-	gFdlPrintChannel->put_char(gFdlPrintChannel,temp);
-
-	gFdlPrintChannel->put_char(gFdlPrintChannel,0x77);
-
-}
 void dl_packet_init(struct dl_ch *ch)
 {
 	uint32_t i = 0;
@@ -49,7 +35,7 @@ void dl_packet_init(struct dl_ch *ch)
 	packet[PACKET_MAX_NUM-1].next = NULL;
 
 	fdl_ch = ch;
-	printk("fdl_ch: %p\n",fdl_ch);
+	LOG_INF("fdl_ch: %p",fdl_ch);
 }
 
 struct dl_pkt *dl_pkt_alloc (void)
@@ -112,7 +98,7 @@ void dl_send_ack(u32_t cmd)
 
 	pkt = dl_pkt_alloc();
 	if (pkt == NULL) {
-		printk("Alloc packet failed!\n");
+		LOG_INF("Alloc packet failed!");
 		dl_cmd_reply(OPERATE_SYSTEM_ERROR);
 		return;
 	}
@@ -140,7 +126,7 @@ int dl_pkt_handler(u8_t *buf, u32_t len)
 
 	pkt = dl_pkt_alloc();
 	if (pkt == NULL) {
-		printk("Alloc packet failed!\n");
+		LOG_ERR("Alloc packet failed!\n");
 		dl_send_ack(BSL_REP_OPERATION_FAILED);
 		return -1;
 	}
@@ -151,7 +137,7 @@ int dl_pkt_handler(u8_t *buf, u32_t len)
 	pkt->body.type = EndianConv_16(pkt->body.type);
 	pkt->body.size = EndianConv_16(pkt->body.size);
 
-	printk("pkt type: %d.\n", pkt->body.type);
+	LOG_INF("pkt type: %d.", pkt->body.type);
 	for (i = 0, cmd = dl_cmds; i < cmds_cnt; i++, cmd++) {
 		if ((pkt->body.type == cmd->type) && (cmd->handle != NULL)) {
 			cmd->handle(pkt, NULL);

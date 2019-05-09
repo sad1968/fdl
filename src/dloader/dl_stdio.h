@@ -19,17 +19,29 @@
 extern "C" {
 #endif /* __cplusplus */
 
-/******************************************************************************
- * FDL_memcpy
- ******************************************************************************/
-void *FDL_memcpy (void *dst, const void *src, unsigned int count);
+#define _LITTLE_ENDIAN 1
 
-/******************************************************************************
- * FDL_memset
- ******************************************************************************/
-void *FDL_memset (void *dst, int c, unsigned int count);
-unsigned short EndianConv_16 (unsigned short value);
-unsigned int EndianConv_32 (unsigned int value);
+static inline unsigned short EndianConv_16 (unsigned short value)
+{
+#ifdef _LITTLE_ENDIAN
+    return (value >> 8 | value << 8);
+#else
+    return value;
+#endif
+}
+static inline unsigned int EndianConv_32 (unsigned int value)
+{
+#ifdef _LITTLE_ENDIAN
+    unsigned int nTmp = 0;
+	nTmp = (value >> 24 | value << 24);
+
+    nTmp |= ( (value >> 8) & 0x0000FF00);
+    nTmp |= ( (value << 8) & 0x00FF0000);
+    return nTmp;
+#else
+    return value;
+#endif
+}
 
 #ifdef __cplusplus
 }

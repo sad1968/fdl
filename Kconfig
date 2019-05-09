@@ -1,0 +1,13 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+mainmenu "UNISOC FDL"
+
+module = FDL
+module-dep = LOG
+module-str = fdl
+module-help = Sets log level for fdl application.
+source "subsys/logging/Kconfig.template.log_config"
+
+source "Kconfig.zephyr"
